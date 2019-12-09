@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+
+<html lang="ko" 
+xmlns:th="http://www.thymeleaf.org" 
+>
+
+<head th:include="fragments/header :: configHead">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge; charset=UTF-8"></meta>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<style>
+
+.no-drag {-ms-user-select: none; -moz-user-select: -moz-none; -webkit-user-select: none; -khtml-user-select: none; user-select:none;}
+
+
+.paintweb_layerCanvas, .paintweb_bufferCanvas {
+  cursor: crosshair;
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.paintweb_selectionMarquee_cir {
+  border: 3px dashed #f00;
+  opacity: 2;
+  position: absolute;
+  z-index : 100;
+}
+
+.paintweb_selectionMarquee {
+
+  border: 3px dashed #f00;
+  opacity: 2;
+  position: absolute;
+  z-index : 100;
+  
+}
+
+canvas {
+	
+    margin-left: 15px;
+    margin-top: 15px;
+    margin-right: 15px;
+    margin-bottom: 15px;
+	
+}
+
+.canvasInImg {
+
+    
+    margin-top: 15px;
+    margin-left: 15px;
+	
+}
+
+/* RAS 기본 STYLE */
+
+.ui-datepicker-month{
+padding: 0px !important;
+color: black;
+} 
+.ui-datepicker-year{
+padding: 0px !important;
+color: black;
+}
+select{
+padding: 0px !important;
+color: black;
+}
+
+</style>
+
+<style  th:inline="text">
+body{
+	background-color:#E1F3FF !important;
+	background: url([[@{/asset/img/bannerBackground02.png}]]) no-repeat left bottom;
+}
+</style>
+
+
+
+<script
+  src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+  integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
+  crossorigin="anonymous"></script>
+
+
+
+<script>
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+function selectDbl(id){
+	
+	if (confirm("Are You sure remove this figure?") == true){    //íì¸
+		$('#'+id+'').remove();
+		selectionDeletePosition(id);
+
+	 }else{   //ì·¨ì
+	     return false;
+	 }
+}
+
+function figureOver(event,id){
+	
+	$('#'+id+'').mousemove(function(e) {
+
+		mouseAreaUpdate(e,id);
+	
+	});
+}
+
+function figureOut(event,id){
+	
+	//figureOutFlag
+	
+	if(currMouseDownId == id)
+		figureOutFlag = true;
+}
+
+
+/* FIGURE MOUSE CONTROLL */
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+var mousePoint;
+var mouseDownArea = '';
+var mouseDownId = '';
+var mouseUpArea = '';
+var mouseDownResize = '';
+var mouseArea = '';
+var currMouseDownId = 0;
+var figureOutFlag = false;
+
+
+function selectRecDown(e,id){
+	figureOutFlag = false;
+	mousePoint = e;
+	mouseDownArea = mouseArea;
+	
+	
+	/* in/border 에 따라 도형 상태 지정 */
+	switch(mouseDownArea){
+		
+		case 'in'		:   //$('#drawCanvasDiv').ondragstart( );   
+							$('#'+id+'').draggable({'disabled': false})   ;
+			
+		break;
+		
+		case 'out'		: 
+		break;
+		
+		case 'border'	:   //$('#drawCanvasDiv').ondragstart(false );   
+							$('#'+id+'').draggable({'disabled': true})   ;
+		break;
+		
+		default : alert('selectRecDown - ERROR');
+		break;
+		
+		
+	}
+	
+
+	
+	mouseDownId = id;
+	
+	console.log('selectRecDown');
+	
+	
+	/* 클릭한 순간의 mouse상태 기억 ex)꼭지점 변 (테두리) */
+	mouseDownResize = currMouseResize;
+	
+	/* 클릭한 순간의 mouse 포지션 기억 */
+	mouseTempDownE = e;
+	
+	/* 클릭한 순간의 mouse 도형 ID 기억 */
+	currMouseDownId = currId;
+}
+
+
+var mouseTempDownE;
+function selectRecUp(e,id){
+
+	mouseUpArea = mouseArea;
+	
+	
+	switch(mouseDownArea){
+	
+		case 'in' 		: 
+						  selectionModiftyPosition(currId);
+						  
+		break;	
+			
+		case 'out'		: console.log('OUT??');
+		break;	
+		
+		case 'border' 	: selectionResize(mouseTempDownE, e, mouseDownId, mouseDownResize, mouseUpArea);
+						  selectionModiftyPosition(currId);
+		break;
+		
+		default : console.log('selectRecUp() - OTHER');
+		break;
+
+	}
+	
+	currId = '';
+	mouseDownId = '';
+	mouseDownArea = '';
+	
+}
+
+function selectRec(e,id){
+		
+	//console.log('selectRec');
+	//console.log(id);
+
+	//1. ëë¶ë¶ ì¡ìê²½ì°
+	
+	//2. ê°ì´ë° ì¡ì ê²½ì°
+}
+
+function addToCanvas(ctx, image, x, y) {
+	  var img = new Image;
+	  img.src = image;
+	  window.onload = function() {
+	    ctx.drawImage(img, 100, 100);
+	  };
+};
+	
+function changeFigureType_cir(){
+	figureType = 'cir';
+}
+
+function changeFigureType_rec(){
+	figureType = 'rec';
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/* FIGURE MOUSE CONTROLL */
+
+
+
+/* DRAG & DROP */
+//////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+function allowDrop(e){
+	e.preventDefault();
+}
+
+
+var eSetData = '';
+function dragstart(e,id){
+	
+	if(mouseArea == 'in'){
+		console.log('dragstart :'+id);
+		
+		
+		/* dragì¤ì¸ ID ë³ìì ë£ê¸° */
+		eSetData = e.target.id;
+		//e.dataTransfer.setData("Text", e.target.id);
+		
+	}
+}
+
+
+function drop(e){
+	
+	if(mouseArea == 'in'){
+		
+		console.log('drop');
+		e.preventDefault();
+		var data = eSetData
+		console.log(e);
+		console.log(data);
+		
+		
+		if(mousePoint != undefined){
+			$('#'+data+'').offset({'top': e.y - mousePoint.layerY, 'left': e.x - mousePoint.layerX});
+		}else{
+			return;
+		}
+	}
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/* DRAG & DROP */
+
+
+
+
+var totalCnt = 1;
+var figureType = 'rec';
+var figureJSON = [];
+
+$('.figure').click(function(e){
+	
+	console.log(mouseover);
+	console.log(e);
+	
+});
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+$(document).ready(function(){
+	
+
+	
+
+	var drawCanvas = document.getElementById('drawCanvas');
+	var drawCanvas2 = document.getElementById('drawCanvasLayer');
+
+	var drawBackup = new Array();
+	
+	if (typeof drawCanvas.getContext == 'function') {
+
+		var ctx = drawCanvas.getContext('2d');
+		var ctx2 = drawCanvas2.getContext('2d');
+		var isDraw = false;
+		var width = $('#width').val();;
+		var color = $('#color').val();
+		var pDraw = $('#drawCanvas').offset();
+		var currP = null;
+		
+		$('#width').bind('change', function(){ width = $('#width').val(); });
+		$('#color').bind('change', function(){ color = $('#color').val(); });
+
+		// ì ì¥ë ì´ë¯¸ì§ í¸ì¶
+		if (localStorage['imgCanvas']) {
+			loadImage();
+			
+		} else {
+			ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+		}
+
+		// Event (ë§ì°ì¤)
+		var x0 = -1;
+		var y0 = -1;
+		var mouseDownFlag = false;
+		var x = 0,
+		y = 0;
+		r_w = 0;
+		r_h = 0;
+		
+		$('#drawCanvas').mousedown(function(e) {
+			
+			mouseDownFlag = true;
+			
+			x0 = e.offsetX;
+			y0 = e.offsetY;
+			
+			$('#drawCanvas').mousemove(function(e) {
+				
+				clearCanvas();
+				
+				
+			    x = Math.min(e.offsetX,  x0);
+		        y = Math.min(e.offsetY,  y0);
+		        r_w = Math.abs(e.offsetX - x0);
+		        r_h = Math.abs(e.offsetY - y0);
+		        
+		        
+		        /* canvas ê·¸ë¦¼ ê·¸ë ¤ì£¼ê¸° */
+				if(mouseDownFlag){
+					
+					/* (1)ì¬ê°í ê·¸ë¦¬ê¸° */
+					if(figureType == 'rec'){
+						
+						/* shiftí¤ì ì ì¬ê°í ê·¸ë¦¬ê¸° ìí */
+					    if (e.shiftKey) {
+					        if (r_w > r_h) {
+					          if (y === e.offsetY) {
+					            y -= r_w-r_h;
+					          }
+					          r_h = r_w;
+					        } else {
+					          if (x === e.offsetX) {
+					            x -= r_h-r_w;
+					          }
+					          r_w = r_h;
+					        }
+					      }
+						ctx2.strokeRect(x, y, r_w, r_h);
+						
+					/*(2) ëê·¸ë¼ë¯¸ ê·¸ë¦¬ê¸° */
+					}else if(figureType == 'cir'){
+						
+						ctx2.beginPath();
+						ctx2.arc( (x+x+w)/2, (y+y+h)/2, w, h, (Math.PI/180) *360, false );
+						ctx2.stroke();
+						
+//						//////////////////////////////////////////////////////////////////////////////////////////////////////
+						////////////////////////////////////////////////////////////////////////////////////////////////////////
+						
+					    ctx2.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+
+					    var rectx0 = Math.min(e.offsetX, x0),
+					        rectx1 = Math.max(e.offsetX, x0),
+					        recty0 = Math.min(e.offsetY, y0),
+					        recty1 = Math.max(e.offsetY, y0);
+
+					    /*
+					      ABCD - rectangle
+					      A(rectx0, recty0), B(rectx1, recty0), C(rectx1, recty1), D(rectx0, recty1)
+					    */
+
+					    var w = rectx1-rectx0,
+					        h = recty1-recty0;
+
+					    if (!w || !h) {
+					      needsRedraw = false;
+					      return;
+					    }
+
+					    /* shiftí¤ì ì  ì ê·¸ë¦¬ê¸° ìí */
+					    if (e.shiftKey) {
+					      if (w > h) {
+					        recty1 = recty0+w;
+					        if (recty0 == e.offsetY) {
+					          recty0 -= w-h;
+					          recty1 -= w-h;
+					        }
+					        h = w;
+					      } else {
+					        rectx1 = rectx0+h;
+					        if (rectx0 == e.offsetX) {
+					          rectx0 -= h-w;
+					          rectx1 -= h-w;
+					        }
+					        w = h;
+					      }
+					      r_h = h;
+					      r_w = w;
+					    }
+
+					    // Ellipse radius
+					    var rx = w/2,
+					        ry = h/2; 
+
+					    // Ellipse center
+					    var cx = rectx0+rx,
+					        cy = recty0+ry;
+
+					    // Ellipse radius*Kappa, for the BÃ©zier curve control points
+					    var K = 4*((Math.SQRT2-1)/3);
+					    rx *= K;
+					    ry *= K;
+
+					    ctx2.beginPath();
+
+					    // startX, startY
+					    ctx2.moveTo(cx, recty0);
+
+					    // Control points: cp1x, cp1y, cp2x, cp2y, destx, desty
+					    // go clockwise: top-middle, right-middle, bottom-middle, then left-middle
+					    ctx2.bezierCurveTo(cx + rx, recty0, rectx1, cy - ry, rectx1, cy);
+					    ctx2.bezierCurveTo(rectx1, cy + ry, cx + rx, recty1, cx, recty1);
+					    ctx2.bezierCurveTo(cx - rx, recty1, rectx0, cy + ry, rectx0, cy);
+					    ctx2.bezierCurveTo(rectx0, cy - ry, cx - rx, recty0, cx, recty0);
+					    
+				    	//ctx2.fill();
+					    
+					    ctx2.stroke();
+					    ctx2.closePath();
+					}
+				}
+			});
+			
+			if (e.button===0) {
+
+				e.preventDefault();
+				ctx.beginPath();
+				isDraw = true;
+			}
+
+		});
+
+		$('#drawCanvas').mouseup(function(e) {
+			
+			ctx2.fillRect(x, y, r_w, r_h);
+			clearCanvas();
+			
+			if(mouseDownFlag){
+				if(figureType == 'rec'){
+					$('#drawCanvasDiv').append('<div id ="'+totalCnt+'"class="figure paintweb_selectionMarquee" style="top: '+(y+15)+'px'+'; left: '+(x+15)+'px'+'; width: '+(r_w-12+15)+'px'+'; height: '+(r_h-12+15)+'px'+'; " onmousedown=selectRecDown(event,'+totalCnt+')  onmouseover=figureOver(event,'+totalCnt+') onmouseout=figureOut(event,'+totalCnt+') onclick=selectRec(event,'+totalCnt+') ondblclick=selectDbl('+totalCnt+')        draggable="disables:false" ondragstart=dragstart(event,'+totalCnt+') ></div>');
+					$('#'+totalCnt+'').draggable({'disabled': false})
+				}else if(figureType == 'cir'){
+					$('#drawCanvasDiv').append('<div id ="'+totalCnt+'"class="figure paintweb_selectionMarquee_cir" style="border-radius: 50%; top: '+(y+15)+'px'+'; left: '+(x+15)+'px'+'; width: '+(r_w-12+15)+'px'+'; height: '+(r_h-12+15)+'px'+'; " onmousedown=selectRecDown(event,'+totalCnt+')  onmouseover=figureOver(event,'+totalCnt+'); mouseout=figureOut(event,'+totalCnt+') onclick=selectRec(event,'+totalCnt+') ondblclick=selectDbl('+totalCnt+')          draggable="false" ondragstart=dragstart(event,'+totalCnt+') ></div>');
+					$('#'+totalCnt+'').draggable({'disabled': false})
+				}
+			}
+			
+			e.preventDefault();
+			mouseDownFlag = false;
+			isDraw = false;
+			
+			/* ë°ì´í° ë§ë¤ì´ì£¼ê¸° */
+			///////////////////////////////////////////////////////////////////////////// 
+			var tempObj = null;
+			if(figureType == 'rec'){
+				tempObj = {'xpo':x+'px' , 'ypo':y+'px' ,'width':r_w+'px', 'height':r_h+'px', 'id':totalCnt , 'type':figureType };
+			}else if(figureType == 'cir'){
+				tempObj = {'xpo':x+'px' , 'ypo':y+'px' ,'width':r_w+'px', 'height':r_h+'px', 'id':totalCnt , 'type':figureType };
+			}
+			if(mouseDownArea != 'border'){
+				figureJSON.push(tempObj);
+				setListTable();
+				totalCnt++;
+				
+				var jqGridData = $('#boardTable').getRowData();
+				
+				console.log(jqGridData);
+				console.log(figureJSON);
+				
+			}else{
+				
+			}
+			
+			 /* ë°ì´í° ì½ì */
+			
+			 
+			////////////////////////////////////////////////////////////////////////////// 
+		});
+		
+		
+		$('#drawCanvas').bind('mouseleave', function(e) {
+			isDraw = false;
+		});
+
+		// ì  ê·¸ë¦¬ê¸°
+		function loadImage() { // reload from localStorage
+
+			var img = new Image();
+			img.onload = function() {
+				ctx.drawImage(img, 0, 0);
+			}
+			img.src = localStorage.getItem('imgCanvas');
+
+		}
+
+		function clearCanvas() {
+
+			ctx2.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+		}
+/* 
+
+
+		function prevCanvas() {
+
+			ctx.putImageData(drawBackup.pop(), 0, 0);
+
+		} */
+
+
+
+		$('#btnPrev').click(function() {
+
+			prevCanvas();
+
+		});
+
+
+
+		$('#btnClea').click(function() {
+
+			clearCanvas();
+
+		});
+
+
+
+		$('#btnSave').click(function() {
+
+			saveImage();
+
+		});
+
+	}
+
+});
+
+</script>
+
+
+<body>
+<nav class="navbar navbar-default header navbar-fixed-top"  th:include="fragments/mainHeader :: header"></nav>
+
+<div>
+	<div class="col-sm-12" >
+		<div class="col-sm-6" >
+			<div  class="no-drag" align="center" id="drawCanvasDiv" style="width:800px; height:800px; text-align:center; margin:margin: 0px auto;" ondragstart="return true"  onmouseup = "selectRecUp(event,'')"  ondrop="drop(event)">
+		
+				<canvas class="paintweb_layerCanvas" id="drawCanvasLayer" width="800px" height="800px" style="border:1px solid #000000;" >
+				</canvas>
+				
+				<canvas class="paintweb_bufferCanvas" id="drawCanvas" width="800px" height="800px" style="border:1px solid #000000;" >
+				</canvas>
+				
+	    		<img id ="canvasImage" class="canvasInImg" src="https://www.soriaudio.com/files/attach/images/216/648/294/036/ea5d005c78e7a3cb571617f6bd24d6fb.jpg" style="max-width:95%; height: auto; margin-left: auto; margin-right: auto; display: block;" alt="PCB íì ëí ì´ë¯¸ì§ ê²ìê²°ê³¼">
+	
+				<!-- <img id ="canvasImage" class="irc_mis" src="http://www.pask.net/b_pask/data/file/exhibition/3555251663_drlesiuV_15514343408505B15D.jpg" style="width:90%; height:90%" alt="PCB íì ëí ì´ë¯¸ì§ ê²ìê²°ê³¼"> -->
+			</div>
+		</div>
+		<div class="col-sm-6" >
+		
+	  <table style="width:100%">
+	      <thead>
+	        <tr>  
+	          <th>
+	          	<button  onclick="changeFigureType_rec();"><img src ="/ASML_RAS/asset/img/boardFigureRec.jpg"  ></button>
+	          </th>
+	          <th>
+	          	<button  onclick="changeFigureType_cir();"><img src ="/ASML_RAS/asset/img/boardFigureCir.jpg" ></button>	
+	          </th>
+	        </tr>
+	      </thead>
+      </table>
+		
+			<br>
+			
+			 <div class="panel form-element-padding">
+                        <div class="panel-heading">
+                         	<h4>Board Positioning Figure List</h4>
+                        </div>
+                        <div class="panel-body" style="padding-bottom:30px;">
+							
+							
+	                         <div class="col-md-12" id="boardListGrid">
+                        </div>           
+					</div>
+		
+		</div>
+	</div>
+	
+<div class="col-sm-3">
+	<div>
+
+		<select id="width">
+
+			<option value="1">1px</option>
+
+			<option value="2">2px</option>
+
+			<option value="3" selected>3px</option>
+
+			<option value="5">5px</option>
+
+			<option value="10">10px</option>
+
+			<option value="20">20px</option>
+
+		</select>
+
+		<select id="color">
+
+			<option value="#000000">ê²ì </option>
+
+			<option value="#FF0000">ë¹¨ê°</option>
+
+			<option value="#00FF00">ë¹ì</option>
+
+			<option value="#0000FF">íë</option>
+
+			<option value="#FFFF00">ë¸ë</option>
+
+			<option value="#FFFFFF">í°ì</option>
+
+		</select>
+
+		<button id="btnPrev">ëëë¦¬ê¸°</button>
+
+		<button id="btnClea">Clear</button>
+
+		<button id="btnSave">ë¤ì´ë¡ë</button>
+		
+		<form action="UploadService">
+		
+          <tr>
+              <td>ê¸ì´ì´ : </td>
+              <td><input type="text" name="author"/></td>
+          </tr>
+          <tr>
+              <td>ì ëª© : </td>
+              <td><input type="text" name="title"/></td>
+          </tr>
+          <tr>
+              <td>ê¸ì´ì´ : </td>
+              <td><input type="file" value="íì¼ ì í" name="file"/></td>
+          </tr>
+          <tr>
+              <td colspan="2"><input type="submit" value="ìë¡ë"/></td>
+          </tr>
+        </form>
+		
+				 
+
+		
+	</div>
+
+</div>
+</div>
+
+<img id="saveImg" src="" style="display:none;" />
+
+
+
+<footer th:include="fragments/footer :: footerFragment"></footer>	
+
+</body>
+
+<script type= text/javascript>
+
+$(document).ready(function(){
+	
+	
+	
+	setListTable();
+	
+});
+var boardPositionList =[];
+
+	function setListTable(){
+			
+			$("#pager_left").css("width", "");
+			var $boardDiv = $('#boardListGrid'); 
+			$boardDiv.empty();
+			$boardDiv.append("<table id=\"boardTable\"></table>");
+		var $boardTable =$('#boardTable');
+		
+		$boardTable.jqGrid({
+			datastr : figureJSON,
+			datatype : "jsonstring",
+			colModel: [
+				//'xpo':x , 'ypo':y ,'width':r_w, 'height':r_h, 'id':totalCnt , 'type':figureType, };
+					   {label : "id", name: 'id' , width:'10%'},
+			           {label : "type", name: 'type' , width:'10%'},
+					   {label : "xpo", name: 'xpo', width:'7%'},
+					   {label : "ypo", name: 'ypo' , width:'5%'},
+			           {label : "width", name: 'width' , width:'13%'},
+			           {label : "height", name: 'height' , width:'10%'}
+		           
+			       ],
+	        	   autowidth : true,
+	        	   shrinkToFit : true,
+	        	   //width: 200, 
+	        	   height: window.innerHeight - 385,
+	        	   rowNum: 200,
+	        	   pager: '#pager',
+    	  	 ondblClickRow : function(rowId) {
+    	  		 
+		   	 },onSelectRow: function(rowid) {
+		   		 
+		   	 }
+		   	 
+		});
+		//$boardTable.jqGrid("filterToolbar", {searchOnEnter: false, searchOperators: false});
+		
+	}
+
+
+var currId = '0';
+var currMouseResize = '';
+function mouseAreaUpdate(event,id) {
+	
+	//console.log('mouseAreaUpdate');
+	//console.log(currId);
+	//console.log(currMouseResize);
+	
+	
+	
+	/* 현재 아이디 지정 */
+	currId = id;
+	
+	var idDiv = $('#'+id+'');
+	//console.log($('#'+id+'')[0]);
+	
+	var figure_w = $('#'+id+'').width();
+	var figure_h = $('#'+id+'').height();
+	var figure_x = $('#'+id+'')[0].offsetLeft;
+	var figure_y = $('#'+id+'')[0].offsetTop;
+	
+	var mouse_x = event.offsetX + figure_x;
+	var mouse_y = event.offsetY + figure_y;
+	
+	//console.log(mouse_x+'/'+mouse_y);
+	//console.log(figure_w+'/'+figure_h+'/'+figure_y+'/'+figure_x);
+	
+	///////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////
+	
+	
+    var border = 3;
+        cursor = '',
+        x1_out = Number(figure_x + figure_w),
+        y1_out = Number(figure_y + figure_h),
+        x1_in  = Number(x1_out - border),
+        y1_in  = Number(y1_out - border),
+        x0_out = Number(figure_x),
+        y0_out = Number(figure_y),
+        x0_in  = Number(figure_x + border),
+        y0_in  = Number(figure_y + border);
+        
+/*      x1_out = sel.x + sel.width,
+        y1_out = sel.y + sel.height,
+        x1_in  = x1_out - border,
+        y1_in  = y1_out - border,
+        x0_out = sel.x,
+        y0_out = sel.y,
+        x0_in  = sel.x + border,
+        y0_in  = sel.y + border; */
+    
+    //console.log(x0_out+'/'+y0_out+'/'+x0_in+'/'+y0_in+'/'+x1_out+'/'+y1_out+'/'+x1_in+'/'+y1_in);
+    //console.log(mouse_x+'/'+mouse_y);
+    
+
+    mouseArea = 'out';
+    
+	
+    // Inside the rectangle
+    if (mouse_x < x1_in && mouse_y < y1_in &&
+    		mouse_x > x0_in && mouse_y > y0_in) {
+      cursor = 'move';
+      mouseArea = 'in';
+
+    } else {
+      // On one of the borders (north/south)
+      if (mouse_x >= x0_out && mouse_x <= x1_out &&
+          mouse_y >= y0_out && mouse_y <= y0_in) {
+        cursor = 'n';
+
+      } else if (mouse_x >= x0_out && mouse_x <= x1_out &&
+                 mouse_y >= y1_in  && mouse_y <= y1_out) {
+        cursor = 's';
+      }
+
+      // West/east
+      if (mouse_y >= y0_out && mouse_y <= y1_out &&
+          mouse_x >= x0_out && mouse_x <= x0_in) {
+        cursor += 'w';
+
+      } else if (mouse_y >= y0_out && mouse_y <= y1_out &&
+                 mouse_x >= x1_in  && mouse_x <= x1_out) {
+        cursor += 'e';
+      }
+
+      if (cursor !== '') {
+    	currMouseResize = cursor;
+        cursor += '-resize';
+        mouseArea = 'border';
+      }
+    }
+
+    // Due to bug 126457 Opera will not automatically update the cursor, 
+    // therefore they will not see any visual feedback.
+    if (cursor !== idDiv.css('cursor')) {
+    	idDiv.css('cursor',cursor);
+    }
+    
+    //console.log(mouseArea);
+}
+
+
+
+
+
+  
+function selectionResize(e_d, e_u, id, mouseResize, mouseUpArea) {
+	
+	if(id != currId){
+		alert('Shapes overlap!');
+		return
+	}
+	
+	if(id == ''){
+		console.log('return!!');
+		return;
+	}
+	
+	//console.log('selectionResize :'+id);
+	//console.log(e_u.offsetX+'/'+e_u.offsetY);
+	//console.log(mouseUpArea);
+	
+	var idDiv = $('#'+id+'');
+	
+	var figure_w = idDiv.width();
+	var figure_h = idDiv.height();
+	var figure_x = idDiv[0].offsetLeft;
+	var figure_y = idDiv[0].offsetTop;
+	
+	var mouse_x; 
+	var mouse_y; 
+	
+	var x0 = e_d.offsetX + figure_x;
+	var y0 = e_d.offsetY + figure_y;
+	
+	
+	//figureOutFlag = false;
+	if(mouseUpArea == 'out' && figureOutFlag == true){
+		
+		//alert('@@@');
+		mouse_x = e_u.offsetX + 15-4;
+		mouse_y = e_u.offsetY + 15-4;
+		
+		figureOutFlag = false;
+		
+	}else if(mouseUpArea == 'in' && figureOutFlag == true){
+
+		alert('Not allow to be smaller and larger at the same time!');
+		figureOutFlag = false;
+		return;
+		
+	}else if(mouseUpArea == 'border' && figureOutFlag == true){
+		
+		mouse_x = e_u.offsetX + 15-4;
+		mouse_y = e_u.offsetY + 15-4;
+		
+		figureOutFlag = false;
+		
+	}else if(mouseUpArea == 'in' && figureOutFlag == false){
+		mouse_x = e_u.offsetX + figure_x;
+		mouse_y = e_u.offsetY + figure_y;
+		
+		figureOutFlag = false;
+	}
+	
+	
+	//////////////////////////////////
+	//////////////////////////////////
+	
+    var diffx = mouse_x - x0,
+        diffy = mouse_y - y0,
+        x     = figure_x,
+        y     = figure_y,
+        w     = figure_w,
+        h     = figure_h;
+	
+	
+    switch (mouseResize) {
+      case 'nw':
+        x += diffx;
+        y += diffy;
+        w -= diffx;
+        h -= diffy;
+        break;
+      case 'n':
+        y += diffy;
+        h -= diffy;
+        break;
+      case 'ne':
+        y += diffy;
+        w += diffx;
+        h -= diffy;
+        break;
+      case 'e':
+        w += diffx;
+        break;
+      case 'se':
+        w += diffx;
+        h += diffy;
+        break;
+      case 's':
+        h += diffy;
+        break;
+      case 'sw':
+        x += diffx;
+        w -= diffx;
+        h += diffy;
+        break;
+      case 'w':
+        x += diffx;
+        w -= diffx;
+        break;
+      default:
+        lastSel = null;
+        return;
+    }
+
+    if (!w || !h) {
+      lastSel = null;
+      return;
+    }
+
+    // Constrain the rectangle to have the same aspect ratio as the initial 
+    // rectangle.
+    if (e_d.shiftKey) {
+      var p  = sel.width / sel.height,
+          w2 = w,
+          h2 = h;
+
+      switch (mouseResize.charAt(0)) {
+        case 'n':
+        case 's':
+          w2 = MathRound(h*p);
+          break;
+        default:
+          h2 = MathRound(w/p);
+      }
+
+      switch (mouseResize) {
+        case 'nw':
+        case 'sw':
+          x -= w2 - w;
+          y -= h2 - h;
+      }
+
+      w = w2;
+      h = h2;
+    }
+
+    if (w < 0) {
+    	
+      x += w;
+      w *= -1;
+    }
+    if (h < 0) {
+    	
+      y += h;
+      h *= -1;
+    }
+	
+    
+    var mw   = w + 6, //border 만큼 뺴주기 -8
+        mh   = h + 6; //border 만큼 뺴주기 -8
+
+    
+    
+    if (mw < 1 || mh < 1) {
+      lastSel = null;
+      return;
+    }
+
+    // Resizing the ImageData
+    idDiv.css({
+    	'top' : y * 1 + 'px',
+    	'left' : x * 1 + 'px',
+    	'width' : mw + 'px',
+    	'height' : mh + 'px'
+    });
+    
+    console.log('resizeIt!@!@');
+    
+    
+    //lastSel = {'x': x, 'y': y, 'width': w, 'height': h};
+    
+    return;
+}
+  
+  
+  
+  
+function selectionDeletePosition(id){
+	
+	for(var i=0;i<figureJSON.length;i++){
+		if(figureJSON[i].id == id){
+			figureJSON.splice(i,1);
+			break;
+		}
+	}
+	
+	
+	
+	
+	setListTable();
+}
+  
+  
+function selectionModiftyPosition(id){
+	
+	var top = $('#'+currId+'').css('top');
+	var left = $('#'+currId+'').css('left');
+	var width = $('#'+currId+'').css('width');
+	var height = $('#'+currId+'').css('height');
+	
+	
+	console.log('selectionModiftyPosition');
+	
+	for(var i=0;i<figureJSON.length;i++){
+		if(figureJSON[i].id == id){
+			figureJSON[i].xpo = top;
+			figureJSON[i].ypo = left;
+			figureJSON[i].width = width;
+			figureJSON[i].height = height;
+			break;
+		}
+	}
+	
+	setListTable();
+	
+}
+  
+  
+</script>
+
+</html>
