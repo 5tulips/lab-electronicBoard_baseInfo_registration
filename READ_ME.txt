@@ -9,3 +9,8 @@ version 1.1
 version 1.2
 
 ejrvksl 작성!! pull 해보거라
+
+--------
+version 1.3
+
+노트북으로 커밋!
